@@ -1,0 +1,33 @@
+bank app
+2K
+
+login, homepage
+
+login using email, password
+register with phone otp
+
+
+savings
+send money
+select recipient in contact list
+
+transfer fee: P2
+
+Homepage
+Preview remaining balance
+Transfer Button
+Load Button
+Cash in button
+
+Transfer
+	select contact list
+	input amount
+	transfer button
+	
+
+E-Load Page
+	select service provider
+	input mobile number
+	input load value
+
+Cash-in Page
