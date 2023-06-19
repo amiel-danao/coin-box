@@ -5,17 +5,19 @@ import static com.thesis.coinbox.utilities.PhoneUtilities.formatMobileNumber;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -26,25 +28,23 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.thesis.coinbox.data.model.LoggedInUser;
+import com.thesis.coinbox.databinding.FragmentELoadBinding;
 import com.thesis.coinbox.databinding.FragmentTransferBinding;
 
 import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
 
-public class TransferFragment extends RequireLoginFragment{
-    private FragmentTransferBinding binding;
+public class ELoadFragment extends RequireLoginFragment {
+
+    private FragmentELoadBinding binding;
     private NavController navController;
 
-    public TransferFragment() {
-        // Required empty public constructor
-    }
-
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        binding = FragmentTransferBinding.inflate(inflater, container, false);
+
+        binding = FragmentELoadBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
@@ -77,12 +77,12 @@ public class TransferFragment extends RequireLoginFragment{
         binding.editTextAmount.addTextChangedListener(afterTextChangedListener);
 
         binding.payButton.setOnClickListener(v -> {
-           if(isContactNumberValid()){
-               showConfirmationDialog();
-           }
-           else{
-               Toast.makeText(requireContext(), "Invalid contact number!", Toast.LENGTH_LONG).show();
-           }
+            if(isContactNumberValid()){
+                showConfirmationDialog();
+            }
+            else{
+                Toast.makeText(requireContext(), "Invalid contact number!", Toast.LENGTH_LONG).show();
+            }
         });
     }
 
@@ -115,65 +115,36 @@ public class TransferFragment extends RequireLoginFragment{
 
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Confirmation")
-        .setMessage(String.format("Are you sure you want to send %s to %s?", getFormattedAmount(value), receiver))
-        .setPositiveButton("Yes", (dialog, which) -> {
-            // Action to perform when the user confirms (e.g., proceed with the action)
-            // ...
-            checkIfReceiverExists().addOnCompleteListener(task -> {
-                if(!task.isSuccessful()) {
-                    Toast.makeText(requireContext(), task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                    return;
-                }
+                .setMessage(String.format("Are you sure the receiving number is correct?\n Amount of %s will be loaded to %s?", getFormattedAmount(value), receiver))
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    proceedPayment(loggedInUser.getSavingsRef(), getAmount());
+                })
+                .setNegativeButton("No", (dialog, which) -> {
 
-                if(task.getResult().isEmpty()){
-                    Toast.makeText(requireContext(), "Recipient is not yet registered!", Toast.LENGTH_LONG).show();
-                    return;
-                }
-
-                LoggedInUser receiverUser = task.getResult().getDocuments().get(0).toObject(LoggedInUser.class);
-
-                assert receiverUser != null;
-                if(receiverUser.getSavingsRef() == null)
-                {
-                    Toast.makeText(requireContext(), "Recipient doesn't have a savings account yet!", Toast.LENGTH_LONG).show();
-                    return;
-                }
-
-                proceedPayment(loggedInUser.getSavingsRef(), receiverUser.getSavingsRef(), getAmount());
-            });
-        })
-        .setNegativeButton("No", (dialog, which) -> {
-
-            // Action to perform when the user cancels or dismisses the dialog (e.g., do nothing or handle cancellation)
-            // ...
-        })
-        .setCancelable(false) // Prevent dismissing the dialog by tapping outside or pressing the back button
-        .show();
+                    // Action to perform when the user cancels or dismisses the dialog (e.g., do nothing or handle cancellation)
+                    // ...
+                })
+                .setCancelable(false) // Prevent dismissing the dialog by tapping outside or pressing the back button
+                .show();
     }
 
-    private void proceedPayment(DocumentReference sender, DocumentReference receiverRef, float amount) {
-        if(sender == receiverRef)
-            return;
-
+    private void proceedPayment(DocumentReference sender, float amount) {
         if(amount == 0)
             return;
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
 
-        batch.update(receiverRef, "balance", FieldValue.increment(amount));
         batch.update(sender, "balance", FieldValue.increment(-amount));
 
         batch.commit()
-        .addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
+            .addOnSuccessListener(aVoid -> {
                 // Batch write succeeded
                 // Handle success case
                 // ...
                 AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
                 builder.setTitle("Success")
-                        .setMessage("Transferred successfully")
+                        .setMessage("Loaded successfully")
                         .setPositiveButton("OK", (dialog, which) -> {
                             // Action to perform when the "OK" button is clicked
                             // ...
@@ -182,17 +153,14 @@ public class TransferFragment extends RequireLoginFragment{
                         })
                         .setCancelable(false) // Prevent dismissing the dialog by tapping outside or pressing the back button
                         .show();
-            }
-        })
-        .addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
+            })
+            .addOnFailureListener(e -> {
+
                 // Batch write failed
                 // Handle failure case
                 // ...
                 Toast.makeText(requireContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+            });
     }
 
 
@@ -240,10 +208,5 @@ public class TransferFragment extends RequireLoginFragment{
         currencyFormatter.setCurrency(currency);
 
         return currencyFormatter.format(amount);
-    }
-
-    private Task<QuerySnapshot> checkIfReceiverExists(){
-        String receiver = formatMobileNumber(binding.editTextPhoneRecipient.getText().toString().trim());
-        return FirebaseFirestore.getInstance().collection(USERS_COLLECTION).whereEqualTo("phone", receiver).get();
     }
 }

@@ -71,7 +71,8 @@ public class ContactsFragment extends RequireLoginFragment {
                     // Permission is granted, proceed with contact-related operations
                     // ...
                     List<Contact> contacts = getContacts();
-                    recyclerView.setAdapter(new ContactRecyclerViewAdapter(contacts, navController));
+                    int previousFragmentId = navController.getPreviousBackStackEntry().getDestination().getId();
+                    recyclerView.setAdapter(new ContactRecyclerViewAdapter(contacts, navController, previousFragmentId));
                 } else {
                     // Permission is denied, handle the situation (e.g., show a message or disable contact-related functionality)
                     // ...
@@ -84,7 +85,8 @@ public class ContactsFragment extends RequireLoginFragment {
                 // Permission is already granted, proceed with contact-related operations
                 // ...
                 List<Contact> contacts = getContacts();
-                recyclerView.setAdapter(new ContactRecyclerViewAdapter(contacts, navController));
+                int previousFragmentId = navController.getPreviousBackStackEntry().getDestination().getId();
+                recyclerView.setAdapter(new ContactRecyclerViewAdapter(contacts, navController, previousFragmentId));
             } else {
                 // Permission is not granted, request it from the user
                 requestPermissionLauncher.launch(READ_CONTACTS_PERMISSION);

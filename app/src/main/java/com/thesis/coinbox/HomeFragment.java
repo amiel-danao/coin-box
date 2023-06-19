@@ -45,6 +45,10 @@ public class HomeFragment extends RequireLoginFragment{
         binding.transferButton.setOnClickListener(v -> {
             navController.navigate(R.id.transferFragment);
         });
+
+        binding.eLoadButton.setOnClickListener(v -> {
+            navController.navigate(R.id.ELoadFragment);
+        });
     }
 
     private void updateSavingsUI() {

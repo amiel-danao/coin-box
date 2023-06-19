@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".TransferFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".ELoadFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -15,7 +15,7 @@
             android:id="@+id/textView2"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:text="@string/transfer"
+            android:text="@string/buy_load"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.AppCompat.Display1"
             android:textStyle="bold"
@@ -60,7 +60,7 @@
                             android:id="@+id/textView3"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/send_to"
+                            android:text="@string/buy_load_for"
                             android:textColor="@color/purple_200"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -70,16 +70,26 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
 
+                            <TextView
+                                android:id="@+id/textView6"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight=".1"
+                                android:text="@string/ph_code"
+                                android:textColor="@color/purple_200"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
                             <EditText
                                 android:id="@+id/editTextPhoneRecipient"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="5dp"
                                 android:layout_marginEnd="5dp"
-                                android:layout_weight=".7"
+                                android:layout_weight=".6"
                                 android:autofillHints=""
                                 android:ems="10"
-                                android:hint="@string/receiver_hint"
+                                android:hint="@string/phone_hint"
                                 android:includeFontPadding="true"
                                 android:inputType="phone"
                                 android:textColor="@color/purple_200"
@@ -169,7 +179,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:enabled="false"
-            android:text="@string/pay"
+            android:text="@string/buy_load"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/cardView2" />

@@ -27,5 +27,17 @@
         <action
             android:id="@+id/action_homeFragment_to_transferFragment"
             app:destination="@id/transferFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_ELoadFragment"
+            app:destination="@id/ELoadFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/ELoadFragment"
+        android:name="com.thesis.coinbox.ELoadFragment"
+        android:label="fragment_e_load"
+        tools:layout="@layout/fragment_e_load" >
+        <action
+            android:id="@+id/action_ELoadFragment_to_contactsFragment"
+            app:destination="@id/contactsFragment" />
     </fragment>
 </navigation>

@@ -24,10 +24,12 @@ public class ContactRecyclerViewAdapter extends RecyclerView.Adapter<ContactRecy
 
     private final List<Contact> contactList;
     private NavController navController;
+    private int previousFragmentId;
 
-    public ContactRecyclerViewAdapter(List<Contact> contactList, NavController navController) {
+    public ContactRecyclerViewAdapter(List<Contact> contactList, NavController navController, int previousFragmentId) {
         this.contactList = contactList;
         this.navController = navController;
+        this.previousFragmentId = previousFragmentId;
     }
 
     @NonNull
@@ -56,7 +58,8 @@ public class ContactRecyclerViewAdapter extends RecyclerView.Adapter<ContactRecy
         Bundle bundle = new Bundle();
         bundle.putString("contactName", contact.getName());
         bundle.putString("contactNumber", contact.getNumber());
-        navController.navigate(R.id.transferFragment, bundle);
+
+        navController.navigate(previousFragmentId, bundle);
     };
 
     @Override
