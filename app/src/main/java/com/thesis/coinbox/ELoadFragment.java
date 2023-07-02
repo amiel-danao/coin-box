@@ -105,7 +105,7 @@ public class ELoadFragment extends RequireLoginFragment {
 
         binding.payButton.setOnClickListener(v -> {
             if(isContactNumberValid()){
-                if(selectedSIM.isEmpty()){
+                if(selectedSIM == null || selectedSIM.isEmpty()){
                     Toast.makeText(requireContext(), "Please select a valid SIM provider", Toast.LENGTH_LONG).show();
                     return;
                 }
