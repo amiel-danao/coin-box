@@ -30,4 +30,15 @@
     <string name="available_balance">Available Balance: </string>
     <string name="next">Next</string>
     <string name="pay">Pay</string>
+    <string name="email_hint">Please enter a valid email address. The email should be in the format \'example@example.com\'.</string>
+    <string name="password_hint">Your password should be at least 8 characters long and include a combination of uppercase and lowercase letters, numbers, and special characters.</string>
+    <string name="transactions">Transactions</string>
+    <string name="cashIn">Cash in</string>
+    <string name="transactions_title">Transaction History</string>
+    <string name="receiver_label">Receiver</string>
+    <string name="sender_label">Sender</string>
+    <string name="money">Money</string>
+    <string name="cash_in_title">Cash In</string>
+    <string name="over_the_counter">Over the counter</string>
+    <string name="amount_prompt">Enter amount</string>
 </resources>

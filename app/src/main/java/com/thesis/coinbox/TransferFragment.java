@@ -1,5 +1,6 @@
 package com.thesis.coinbox;
 
+import static com.thesis.coinbox.utilities.Constants.TRANSACTIONS_COLLECTION;
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 import static com.thesis.coinbox.utilities.PhoneUtilities.formatMobileNumber;
 
@@ -26,15 +27,19 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.thesis.coinbox.data.model.LoggedInUser;
+import com.thesis.coinbox.data.model.Transaction;
 import com.thesis.coinbox.databinding.FragmentTransferBinding;
 
 import java.text.NumberFormat;
 import java.util.Currency;
+import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 public class TransferFragment extends RequireLoginFragment{
     private FragmentTransferBinding binding;
     private NavController navController;
+    private float maintainingBalance = 100;
 
     public TransferFragment() {
         // Required empty public constructor
@@ -99,10 +104,10 @@ public class TransferFragment extends RequireLoginFragment{
             return;
         }
 
-        binding.payButton.setEnabled((savingsAccount.getBalance() - amountToSend) >= 0);
+        binding.payButton.setEnabled((savingsAccount.getBalance() - amountToSend) >= maintainingBalance);
 
         if(!binding.payButton.isEnabled()){
-            Toast.makeText(requireContext(),"Not enough balance!", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(),String.format(Locale.getDefault(), "%s%s %s","Not enough balance! ", getFormattedAmount(maintainingBalance),  "maintaining balance is required."), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -112,6 +117,9 @@ public class TransferFragment extends RequireLoginFragment{
         float value = 0;
         if(!amount.isEmpty())
             value = Float.parseFloat(amount);
+
+        if(receiver.trim().isEmpty())
+            receiver = binding.editTextPhoneRecipient.getText().toString();
 
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Confirmation")
@@ -139,7 +147,7 @@ public class TransferFragment extends RequireLoginFragment{
                     return;
                 }
 
-                proceedPayment(loggedInUser.getSavingsRef(), receiverUser.getSavingsRef(), getAmount());
+                proceedPayment(loggedInUser, receiverUser, getAmount());
             });
         })
         .setNegativeButton("No", (dialog, which) -> {
@@ -151,38 +159,46 @@ public class TransferFragment extends RequireLoginFragment{
         .show();
     }
 
-    private void proceedPayment(DocumentReference sender, DocumentReference receiverRef, float amount) {
-        if(sender == receiverRef)
+    private void proceedPayment(LoggedInUser sender, LoggedInUser receiver, float amount) {
+        if(sender.getSavingsRef() == receiver.getSavingsRef())
             return;
 
-        if(amount == 0)
+        if(amount <= 0)
             return;
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
 
-        batch.update(receiverRef, "balance", FieldValue.increment(amount));
-        batch.update(sender, "balance", FieldValue.increment(-amount));
+        batch.update(receiver.getSavingsRef(), "balance", FieldValue.increment(amount));
+        batch.update(sender.getSavingsRef(), "balance", FieldValue.increment(-amount));
+
+        DocumentReference documentReference = db.collection(TRANSACTIONS_COLLECTION).document();
+        Transaction transaction = new Transaction();
+        transaction.setType("money");
+        transaction.setAmount(amount);
+        transaction.setDate(new Date());
+        transaction.setSender(db.collection(USERS_COLLECTION).document(sender.getUserId()));
+        transaction.setReceiver(db.collection(USERS_COLLECTION).document(receiver.getUserId()));
+        transaction.setId(documentReference.getId());
+
+        batch.set(documentReference, transaction);
 
         batch.commit()
-        .addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                // Batch write succeeded
-                // Handle success case
-                // ...
-                AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                builder.setTitle("Success")
-                        .setMessage("Transferred successfully")
-                        .setPositiveButton("OK", (dialog, which) -> {
-                            // Action to perform when the "OK" button is clicked
-                            // ...
-                            dialog.dismiss();
-                            navController.navigate(R.id.homeFragment);
-                        })
-                        .setCancelable(false) // Prevent dismissing the dialog by tapping outside or pressing the back button
-                        .show();
-            }
+        .addOnSuccessListener(aVoid -> {
+            // Batch write succeeded
+            // Handle success case
+            // ...
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle("Success")
+                    .setMessage("Transferred successfully")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        // Action to perform when the "OK" button is clicked
+                        // ...
+                        dialog.dismiss();
+                        navController.navigate(R.id.homeFragment);
+                    })
+                    .setCancelable(false) // Prevent dismissing the dialog by tapping outside or pressing the back button
+                    .show();
         })
         .addOnFailureListener(new OnFailureListener() {
             @Override

@@ -30,6 +30,12 @@
         <action
             android:id="@+id/action_homeFragment_to_ELoadFragment"
             app:destination="@id/ELoadFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_transactionsFragment"
+            app:destination="@id/transactionsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_cashInFragment"
+            app:destination="@id/cashInFragment" />
     </fragment>
     <fragment
         android:id="@+id/ELoadFragment"
@@ -40,4 +46,13 @@
             android:id="@+id/action_ELoadFragment_to_contactsFragment"
             app:destination="@id/contactsFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/transactionsFragment"
+        android:name="com.thesis.coinbox.ui.transactions.TransactionsFragment"
+        android:label="TransactionsFragment" />
+    <fragment
+        android:id="@+id/cashInFragment"
+        android:name="com.thesis.coinbox.CashInFragment"
+        android:label="fragment_cash_in"
+        tools:layout="@layout/fragment_cash_in" />
 </navigation>

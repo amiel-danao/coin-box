@@ -20,23 +20,17 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.SetOptions;
 import com.thesis.coinbox.R;
 import com.thesis.coinbox.data.model.LoggedInUser;
 import com.thesis.coinbox.data.model.Savings;
 import com.thesis.coinbox.databinding.FragmentRegisterBinding;
 import com.thesis.coinbox.ui.main.MainActivity;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class RegisterFragment extends Fragment {
 
@@ -60,7 +54,7 @@ public class RegisterFragment extends Fragment {
 
         firebaseAuth = FirebaseAuth.getInstance();
 
-        final EditText usernameEditText = binding.username;
+        final EditText usernameEditText = binding.emailField;
         final EditText emailEditText = binding.email;
         final EditText passwordEditText = binding.password;
         final EditText phone = binding.editTextPhone;
@@ -80,7 +74,7 @@ public class RegisterFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                boolean isUserNameValid = LoginViewModel.isUserNameValid(usernameEditText.getText().toString().trim());
+                boolean isUserNameValid = LoginViewModel.isEmailValid(usernameEditText.getText().toString().trim());
                 boolean isPasswordValid = LoginViewModel.isPasswordValid(passwordEditText.getText().toString().trim());
 
                 registerButton.setEnabled(isUserNameValid && isPasswordValid);
@@ -155,23 +149,23 @@ public class RegisterFragment extends Fragment {
     }
 
     public boolean isFormValid(){
-        if(binding.username.getText().toString().trim().isEmpty()){
-            binding.username.setError("This field is required");
+        if(binding.emailField.getText().toString().trim().isEmpty()){
+            binding.emailField.setError(getString(R.string.email_hint));
             return false;
         }
 
         if(binding.email.getText().toString().trim().isEmpty()){
-            binding.email.setError("This field is required");
+            binding.email.setError(getString(R.string.email_hint));
             return false;
         }
 
         if(binding.password.getText().toString().trim().isEmpty()){
-            binding.password.setError("This field is required");
+            binding.password.setError(getString(R.string.password_hint));
             return false;
         }
 
         if(binding.confirmPassword.getText().toString().trim().isEmpty()){
-            binding.confirmPassword.setError("This field is required");
+            binding.confirmPassword.setError(getString(R.string.password_hint));
             return false;
         }
 

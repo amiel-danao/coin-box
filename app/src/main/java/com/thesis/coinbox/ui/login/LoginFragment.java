@@ -2,21 +2,16 @@ package com.thesis.coinbox.ui.login;
 
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,15 +19,10 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.thesis.coinbox.data.model.LoggedInUser;
 import com.thesis.coinbox.databinding.FragmentLoginBinding;
 
 import com.thesis.coinbox.R;
@@ -62,7 +52,7 @@ public class LoginFragment extends Fragment {
         firebaseAuth = FirebaseAuth.getInstance();
 
 
-        final EditText usernameEditText = binding.username;
+        final EditText emailFieldText = binding.emailField;
         final EditText passwordEditText = binding.password;
         final Button loginButton = binding.login;
         final ProgressBar loadingProgressBar = binding.loading;
@@ -81,26 +71,26 @@ public class LoginFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                boolean isUserNameValid = LoginViewModel.isUserNameValid(usernameEditText.getText().toString().trim());
+                boolean isEmailValid = isValidEmail(emailFieldText.getText().toString().trim());
                 boolean isPasswordValid = LoginViewModel.isPasswordValid(passwordEditText.getText().toString().trim());
 
-                loginButton.setEnabled(isUserNameValid && isPasswordValid);
+                loginButton.setEnabled(isEmailValid && isPasswordValid);
 
-                if(!isUserNameValid)
-                    usernameEditText.setError("Invalid");
+                if(!isEmailValid)
+                    emailFieldText.setError(getString(R.string.email_hint));
 
                 if(!isPasswordValid)
-                    passwordEditText.setError("Invalid");
+                    passwordEditText.setError(getString(R.string.password_hint));
             }
         };
 
-        usernameEditText.addTextChangedListener(afterTextChangedListener);
+        emailFieldText.addTextChangedListener(afterTextChangedListener);
         passwordEditText.addTextChangedListener(afterTextChangedListener);
         passwordEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 loadingProgressBar.setVisibility(View.VISIBLE);
 
-                login(usernameEditText.getText().toString(),
+                login(emailFieldText.getText().toString(),
                         passwordEditText.getText().toString());
             }
             return false;
@@ -109,7 +99,7 @@ public class LoginFragment extends Fragment {
         loginButton.setOnClickListener(v -> {
             loadingProgressBar.setVisibility(View.VISIBLE);
 
-            login(usernameEditText.getText().toString().trim(),
+            login(emailFieldText.getText().toString().trim(),
                     passwordEditText.getText().toString().trim());
         });
 
@@ -117,6 +107,15 @@ public class LoginFragment extends Fragment {
 
         binding.registerLink.setOnClickListener(v -> navController.navigate(R.id.registerFragment));
     }
+
+    // Function to validate email format
+    private boolean isValidEmail(String email) {
+        // You can use a regular expression or any other validation logic to check the email format
+        // Here's a simple regular expression for basic email format validation
+        String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+        return email.matches(emailPattern);
+    }
+
 
     public void login(String username, String password) {
         // can be launched in a separate asynchronous job

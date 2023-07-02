@@ -1,5 +1,6 @@
 package com.thesis.coinbox;
 
+import static com.thesis.coinbox.utilities.Constants.TRANSACTIONS_COLLECTION;
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 import static com.thesis.coinbox.utilities.PhoneUtilities.formatMobileNumber;
 
@@ -17,28 +18,36 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RadioButton;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.thesis.coinbox.data.model.LoggedInUser;
+import com.thesis.coinbox.data.model.Transaction;
 import com.thesis.coinbox.databinding.FragmentELoadBinding;
 import com.thesis.coinbox.databinding.FragmentTransferBinding;
 
 import java.text.NumberFormat;
 import java.util.Currency;
+import java.util.Date;
 import java.util.Locale;
 
 public class ELoadFragment extends RequireLoginFragment {
 
     private FragmentELoadBinding binding;
     private NavController navController;
+    private LoggedInUser receiver;
+    private String selectedSIM;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -74,16 +83,44 @@ public class ELoadFragment extends RequireLoginFragment {
             }
         };
 
+        TextWatcher afterPhoneTextChangedListener = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // ignore
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // ignore
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                fetchReceiverUser();
+            }
+        };
+        binding.editTextPhoneRecipient.addTextChangedListener(afterPhoneTextChangedListener);
+
         binding.editTextAmount.addTextChangedListener(afterTextChangedListener);
 
         binding.payButton.setOnClickListener(v -> {
             if(isContactNumberValid()){
+                if(selectedSIM.isEmpty()){
+                    Toast.makeText(requireContext(), "Please select a valid SIM provider", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 showConfirmationDialog();
             }
             else{
                 Toast.makeText(requireContext(), "Invalid contact number!", Toast.LENGTH_LONG).show();
             }
         });
+
+        binding.globeButton.setOnClickListener(onRadioButtonClicked);
+        binding.smartButton.setOnClickListener(onRadioButtonClicked);
+        binding.tntButton.setOnClickListener(onRadioButtonClicked);
+        binding.tmButton.setOnClickListener(onRadioButtonClicked);
+        binding.ditoButton.setOnClickListener(onRadioButtonClicked);
     }
 
     private void checkIfHasEnoughBalance() {
@@ -99,10 +136,15 @@ public class ELoadFragment extends RequireLoginFragment {
             return;
         }
 
-        binding.payButton.setEnabled((savingsAccount.getBalance() - amountToSend) >= 0);
+        binding.payButton.setEnabled((savingsAccount.getBalance() - amountToSend) >= 0 && receiver != null);
+
+        if(receiver == null){
+            binding.editTextPhoneRecipient.setError("Receiver doesn't have an account");
+            return;
+        }
 
         if(!binding.payButton.isEnabled()){
-            Toast.makeText(requireContext(),"Not enough balance!", Toast.LENGTH_LONG).show();
+            binding.editTextAmount.setError("Not enough balance!");
         }
     }
 
@@ -113,11 +155,14 @@ public class ELoadFragment extends RequireLoginFragment {
         if(!amount.isEmpty())
             value = Float.parseFloat(amount);
 
+        if(receiver.isEmpty())
+            receiver = binding.editTextPhoneRecipient.getText().toString();
+
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Confirmation")
                 .setMessage(String.format("Are you sure the receiving number is correct?\n Amount of %s will be loaded to %s?", getFormattedAmount(value), receiver))
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    proceedPayment(loggedInUser.getSavingsRef(), getAmount());
+                    proceedPayment(loggedInUser, getAmount());
                 })
                 .setNegativeButton("No", (dialog, which) -> {
 
@@ -128,14 +173,25 @@ public class ELoadFragment extends RequireLoginFragment {
                 .show();
     }
 
-    private void proceedPayment(DocumentReference sender, float amount) {
+    private void proceedPayment(LoggedInUser sender, float amount) {
         if(amount == 0)
             return;
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         WriteBatch batch = db.batch();
 
-        batch.update(sender, "balance", FieldValue.increment(-amount));
+        batch.update(sender.getSavingsRef(), "balance", FieldValue.increment(-amount));
+
+        DocumentReference documentReference = db.collection(TRANSACTIONS_COLLECTION).document();
+        Transaction transaction = new Transaction();
+        transaction.setType("e-load");
+        transaction.setAmount(amount);
+        transaction.setDate(new Date());
+        transaction.setSender(FirebaseFirestore.getInstance().collection(USERS_COLLECTION).document(sender.getUserId()));
+        transaction.setReceiver(db.collection(USERS_COLLECTION).document(receiver.getUserId()));
+        transaction.setId(documentReference.getId());
+
+        batch.set(documentReference, transaction);
 
         batch.commit()
             .addOnSuccessListener(aVoid -> {
@@ -163,6 +219,12 @@ public class ELoadFragment extends RequireLoginFragment {
             });
     }
 
+    private View.OnClickListener onRadioButtonClicked = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            selectedSIM = view.getTag().toString();
+        }
+    };
 
     @Override
     public void onResume() {
@@ -173,14 +235,44 @@ public class ELoadFragment extends RequireLoginFragment {
 
             binding.editTextPhoneRecipient.setText(selectedContactNumber);
             binding.textViewRecipientName.setText(selectedContactName);
+            fetchReceiverUser();
         }
     }
 
+
+    private void fetchReceiverUser(){
+        receiver = null;
+        binding.payButton.setEnabled(false);
+        if(!isContactNumberValid())
+            return;
+
+        FirebaseFirestore.getInstance().collection(USERS_COLLECTION).whereEqualTo("phone", binding.editTextPhoneRecipient.getText().toString().trim())
+                .get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful()){
+                            if(task.getResult().isEmpty()) {
+                                binding.editTextPhoneRecipient.setError("Receiver doesn't have an account");
+                                return;
+                            }
+                            if(getAmount() > 0) {
+                                binding.payButton.setEnabled(true);
+                            }
+
+                            receiver = task.getResult().getDocuments().get(0).toObject(LoggedInUser.class);
+
+                            binding.editTextPhoneRecipient.setError(null);
+                        }
+                        else{
+                            binding.payButton.setEnabled(false);
+                            Toast.makeText(requireContext(),task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
     private boolean isContactNumberValid(){
-        if(binding.editTextPhoneRecipient.getText().toString().isEmpty()) {
-            return false;
-        }
-        return true;
+        return !binding.editTextPhoneRecipient.getText().toString().isEmpty();
     }
 
     @Override
