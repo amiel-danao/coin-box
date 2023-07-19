@@ -9,10 +9,13 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.thesis.coinbox.databinding.FragmentHomeBinding;
+import com.thesis.coinbox.ui.main.MainActivity;
 
 import java.text.NumberFormat;
 import java.util.Currency;
@@ -38,7 +41,7 @@ public class HomeFragment extends RequireLoginFragment{
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+
 
         navController = Navigation.findNavController(requireActivity(), R.id.navHostFragment);
 
@@ -57,7 +60,12 @@ public class HomeFragment extends RequireLoginFragment{
         binding.cashInButton.setOnClickListener(v -> {
             navController.navigate(R.id.cashInFragment);
         });
+        ActionBar actionBar = ((MainActivity) getActivity()).getSupportActionBar();
+        if ( actionBar != null ) {
+            actionBar.setDisplayHomeAsUpEnabled(false);
+        }
     }
+
 
     private void updateSavingsUI() {
         String welcomeText = String.format("%s %s", getString(R.string.welcome), loggedInUser.getDisplayName());

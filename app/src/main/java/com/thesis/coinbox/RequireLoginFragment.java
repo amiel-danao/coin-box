@@ -4,9 +4,11 @@ import static com.thesis.coinbox.utilities.Constants.SAVINGS_COLLECTION;
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -18,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import com.thesis.coinbox.data.model.LoggedInUser;
 import com.thesis.coinbox.data.model.Savings;
+import com.thesis.coinbox.ui.main.MainActivity;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +40,15 @@ public abstract class RequireLoginFragment extends Fragment {
         }
 
         fetchUserData();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        ActionBar actionBar = ((MainActivity) getActivity()).getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
     }
 
     @Override

@@ -23,7 +23,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestore;import java.util.Currency;
+import java.util.HashMap;
+import java.util.Map;
+import java.text.NumberFormat;
+import java.util.Locale;
 import com.google.firebase.firestore.SetOptions;
 import com.thesis.coinbox.R;
 import com.thesis.coinbox.data.model.LoggedInUser;
@@ -31,11 +35,7 @@ import com.thesis.coinbox.data.model.Savings;
 import com.thesis.coinbox.databinding.ActivityMainBinding;
 import com.thesis.coinbox.ui.login.LoginActivity;
 
-import java.util.Currency;
-import java.util.HashMap;
-import java.util.Map;
-import java.text.NumberFormat;
-import java.util.Locale;
+
 
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
@@ -61,6 +61,10 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             finish(); // Optional: finish the MainActivity so that the user cannot navigate back to it
         }
+
+        // Disable the back button (up button) in the Toolbar
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
     }
 
 
@@ -80,8 +84,17 @@ public class MainActivity extends AppCompatActivity {
             FirebaseAuth.getInstance().signOut();
             // Redirect to LoginActivity or perform any other actions
             return true;
+        }else if (item.getItemId() == android.R.id.home){
+
+            //remove the backbutton when the screen is on homescreen (mainactivity)
+
+            onBackPressed(); // This will perform the same action as the back button press
+            return true;
+
         }
 
         return super.onOptionsItemSelected(item);
+
+
     }
 }

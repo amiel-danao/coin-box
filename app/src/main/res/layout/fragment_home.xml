@@ -18,7 +18,7 @@
             android:padding="8dp"
             android:text="@string/welcome"
             android:textAlignment="center"
-            android:textSize="60sp"
+            android:textSize="34sp"
             android:textStyle="bold"
             app:autoSizeTextType="uniform"
             app:layout_constraintEnd_toEndOf="parent"
@@ -43,8 +43,8 @@
             android:layout_margin="6dp"
             android:clipToPadding="true"
             app:cardBackgroundColor="@color/purple_200"
-            app:cardCornerRadius="6dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="5dp"
             app:cardPreventCornerOverlap="true"
             app:cardUseCompatPadding="true"
             app:contentPadding="10dp"
@@ -97,8 +97,9 @@
                 android:id="@+id/transferButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:insetRight="140dp"
                 android:text="@string/transfer"
-                android:textSize="24sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <Button
@@ -106,7 +107,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/e_load"
-                android:textSize="24sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -124,8 +125,9 @@
                 android:id="@+id/transactionsButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:insetRight="95dp"
                 android:text="@string/transactions"
-                android:textSize="24sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <Button
@@ -133,7 +135,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/cashIn"
-                android:textSize="24sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
 

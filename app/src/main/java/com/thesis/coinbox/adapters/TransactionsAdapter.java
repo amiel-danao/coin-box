@@ -5,12 +5,14 @@ import static com.thesis.coinbox.utilities.Constants.TRANSACTIONS_COLLECTION;
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 
 import android.content.Context;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -23,6 +25,8 @@ import com.thesis.coinbox.data.model.Savings;
 import com.thesis.coinbox.data.model.Transaction;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -62,7 +66,7 @@ public class TransactionsAdapter extends RecyclerView.Adapter<TransactionsAdapte
         private final TextView receiverTextView;
         private final TextView amountTextView;
 
-        private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+        private final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.getDefault());
         private FirebaseFirestore db;
 
         TransactionViewHolder(@NonNull View itemView) {
@@ -77,7 +81,7 @@ public class TransactionsAdapter extends RecyclerView.Adapter<TransactionsAdapte
         void bind(Transaction transaction, LoggedInUser user, Context context) {
             if(user == null)
                 return;
-            dateTextView.setText(dateFormat.format(transaction.getDate()));
+            dateTextView.setText(dateTimeFormat.format(transaction.getDate()));
             transaction.getSender().get().addOnCompleteListener(task -> {
                 if(task.isSuccessful()){
                     LoggedInUser sender = task.getResult().toObject(LoggedInUser.class);
@@ -102,6 +106,33 @@ public class TransactionsAdapter extends RecyclerView.Adapter<TransactionsAdapte
             if(transaction.getSender().getId().equals(user.getUserId()))
                 amount = String.format(Locale.getDefault(), "%s%s", "-", transaction.getAmount());
             amountTextView.setText(amount);
+        }
+    }
+
+    // filteration by month
+    public class TransactionManager {
+        private List<Transaction> transactions; // Your data source containing all transactions
+
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        public List<Transaction> getTransactionsForMonth(int targetYear, int targetMonth) {
+            List<Transaction> filteredTransactions = new ArrayList<>();
+
+            for (Transaction transaction : transactions) {
+                LocalDate localDate = transaction.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                int transactionYear = 0;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    transactionYear = localDate.getYear();
+                }
+                int transactionMonth = 0;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    transactionMonth = localDate.getMonthValue();
+                }
+
+                if (transactionYear == targetYear && transactionMonth == targetMonth) {
+                    filteredTransactions.add(transaction);
+                }
+            }
+            return filteredTransactions;
         }
     }
 }
