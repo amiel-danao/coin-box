@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 
 import com.google.firebase.firestore.DocumentReference;
 
+import java.util.List;
+
 /**
  * Data class that captures user information for logged in users retrieved from LoginRepository
  */
@@ -73,5 +75,9 @@ public class LoggedInUser implements Parcelable {
 
     public String getPhone() {
         return phone;
+    }
+
+    public List<Transaction> getTransactions() {
+        return null;
     }
 }
