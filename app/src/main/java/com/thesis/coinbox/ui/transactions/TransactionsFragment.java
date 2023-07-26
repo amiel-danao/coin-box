@@ -3,13 +3,16 @@ package com.thesis.coinbox.ui.transactions;
 import static com.thesis.coinbox.utilities.Constants.TRANSACTIONS_COLLECTION;
 import static com.thesis.coinbox.utilities.Constants.USERS_COLLECTION;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfDocument;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.print.PrintAttributes;
@@ -22,6 +25,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -63,6 +68,11 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 
 public class TransactionsFragment extends RequireLoginFragment {
     private TransactionsAdapter adapter;
@@ -70,6 +80,9 @@ public class TransactionsFragment extends RequireLoginFragment {
     private final List<Transaction> transactions = new ArrayList<>();
     private String type = "money";
     private FragmentTransactionsBinding binding;
+
+    private static final int REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION = 1;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     @Nullable
     @Override
@@ -80,6 +93,21 @@ public class TransactionsFragment extends RequireLoginFragment {
 
         binding.recyclerView.setAdapter(adapter);
 
+
+
+        // Initialize the ActivityResultLauncher for requesting permissions to write to external storage
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
+            @Override
+            public void onActivityResult(Boolean isGranted) {
+                if (isGranted) {
+                    // permission granted, proceed with creating the DOCX file
+                    createDocxFile(transactions);
+                } else {
+                    // permission denied, show a toast message
+                    Toast.makeText(requireContext(), "Permission denied. Cannot save the file", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
         return binding.getRoot();
     }
 
@@ -203,13 +231,24 @@ public class TransactionsFragment extends RequireLoginFragment {
         binding.saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Call the method to create the DOCX file
-                createDocxFile(transactions);
+                // Check and request permission if needed before calling createDocxFile
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        // Permission not granted, request it
+                        requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                    } else {
+                        // Permission already granted, proceed with creating the DOCX file
+                        createDocxFile(transactions);
+                    }
+                } else {
+                    // For devices running below Android 6.0, permission is granted at installation time
+                    createDocxFile(transactions);
+                }
             }
+
         });
 
     }
-
 
     // iterate through the list of transactions and create a DOCX file
     private void createDocxFile(List<Transaction> transactions) {
@@ -241,68 +280,41 @@ public class TransactionsFragment extends RequireLoginFragment {
                 transactionRun.addBreak();
             }
 
-            // Save the document to a file
-            File appFolder = getApplicationContext().getFilesDir();
-            File outputFile = new File(appFolder, "TransactionList.docx");
-            FileOutputStream out = new FileOutputStream(outputFile);
-            doc.write(out);
-            out.close();
+            if (isExternalStorageWritable()) {
+                // Get the Downloads directory on the external storage
+                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
 
-            // Show a toast message to indicate successful file creation
-            Toast.makeText(requireContext(), "Transaction list downloaded as DOCX", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(requireContext(), "Error creating DOCX file", Toast.LENGTH_SHORT).show();
+                if (!downloadsDir.exists()) {
+                    downloadsDir.mkdirs(); // Create the directory if it doesn't exist
+                }
+
+                // File path and name for the document
+                File outputFile = new File(downloadsDir, "TransactionList.docx");
+
+                // Save the document to the specified file path
+                FileOutputStream out = new FileOutputStream(outputFile);
+                doc.write(out);
+                out.close();
+            }
+                // Show a toast message to indicate successful file creation
+                Toast.makeText(requireContext(), "Transaction list downloaded as DOCX", Toast.LENGTH_SHORT).show();
+            } catch(Exception e){
+                e.printStackTrace();
+                Toast.makeText(requireContext(), "Error creating DOCX file", Toast.LENGTH_SHORT).show();
         }
     }
+
 
     private Context getApplicationContext() {
         return requireContext();
     }
 
+    // Helper method to check if external storage is available and writable
+    private boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
 
-//    private void createDocxFile(List<Transaction> transactions) {
-//        try {
-//            XWPFDocument doc = new XWPFDocument();
-//            XWPFParagraph paragraph = doc.createParagraph();
-//
-//            XWPFRun run = paragraph.createRun();
-//            run.setText("Transaction List");
-//            run.setBold(true);
-//            run.setFontSize(14);
-//
-//            for (Transaction transaction : transactions) {
-//                String date = formatDate(transaction.getDate());
-//                String sender = transaction.getSender().getId();
-//                String receiver = transaction.getReceiver().getId();
-//                String money = String.valueOf(transaction.getAmount());
-//
-//                // Add transaction details to the document
-//                XWPFParagraph transactionParagraph = doc.createParagraph();
-//                XWPFRun transactionRun = transactionParagraph.createRun();
-//                transactionRun.setText("Date: " + date);
-//                transactionRun.addBreak();
-//                transactionRun.setText("Sender: " + sender);
-//                transactionRun.addBreak();
-//                transactionRun.setText("Receiver: " + receiver);
-//                transactionRun.addBreak();
-//                transactionRun.setText("Money: " + money);
-//                transactionRun.addBreak();
-//            }
-//
-//            // Save the document to a file
-//            File outputFile = new File(Environment.getExternalStorageDirectory(), "TransactionList.docx");
-//            FileOutputStream out = new FileOutputStream(outputFile);
-//            doc.write(out);
-//            out.close();
-//
-//            // Show a toast message to indicate successful file creation
-//            Toast.makeText(requireContext(), "Transaction list downloaded as DOCX", Toast.LENGTH_SHORT).show();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            Toast.makeText(requireContext(), "Error creating DOCX file", Toast.LENGTH_SHORT).show();
-//        }
-//    }
 
     private String formatDate(Date date) {
         return date.toString();
